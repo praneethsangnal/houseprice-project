@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
-
+from pathlib import Path
+BASE_DIR=Path(__file__).resolve().parent.parent.parent
+df=pd.read_csv(BASE_DIR/"datasets"/"dataset.csv")
 def preprocess(df):
     #very basic preprocessing
     #drop very useless col
@@ -27,4 +29,9 @@ def preprocess(df):
 
     X=pd.get_dummies(X,drop_first=True)
 
+    print(X.head())
+    print(y.head())
+
     return X,y
+if(__name__=="__main__"):
+    preprocess(df)
