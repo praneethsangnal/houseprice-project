@@ -1,5 +1,6 @@
 import pandas as pd
 import joblib
+import numpy as np
 from pathlib import Path
 
 from sklearn.model_selection import train_test_split
@@ -34,9 +35,17 @@ def train_model():
 
     y_pred=model.predict(X_test)
 
-    print("MAE",mean_absolute_error(y_test,y_pred))
-    print("RMSE",mean_squared_error(y_test,y_pred)**0.5)
-    print("R2",r2_score(y_test,y_pred))
+    print("MAE in % for log values",mean_absolute_error(y_test,y_pred)*100)
+    print("RMSE % for log values",mean_squared_error(y_test,y_pred)**0.5*100)
+    print("R2 % for log values",r2_score(y_test,y_pred)*100)
+
+    # using dollar scale
+    y_test_dollar=np.expm1(y_test)
+    y_pred_dollar=np.expm1(y_pred)
+    print("MAE in dollar values",mean_absolute_error(y_test_dollar,y_pred_dollar)*100)
+    print("RMSE in dollar values",mean_squared_error(y_test_dollar,y_pred_dollar)**0.5*100)
+    print("R2 in dollar values",r2_score(y_test_dollar,y_pred_dollar)*100)
+
 
 if(__name__=="__main__"):
     train_model()
