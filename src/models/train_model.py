@@ -4,7 +4,8 @@ import numpy as np
 from pathlib import Path
 
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression,Ridge,Lasso
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler
 
@@ -27,24 +28,42 @@ def train_model():
     X_train=scaler.fit_transform(X_train)
     X_test=scaler.transform(X_test)
 
-    model=LinearRegression()
-    model.fit(X_train,y_train)
+    models={
+        "LinearRegression":LinearRegression(),
+        "Ridge":Ridge(alpha=0.1),
+        "Lasso":Lasso(alpha=0.001,max_iter=10000),
+        "RandomForest":RandomForestRegressor(n_estimators=100,random_state=42)
 
-    joblib.dump(model,modelpath/"linear_model.pkl")
+    }
+
+    best_model=None
+    best_r2=-1
+    best_modelname=""
+    y_predbest=None
+    results={}
+
+    for modelname,model in models.items():
+        model.fit(X_train,y_train)
+        y_pred=model.predict(X_test)
+        x=r2_score(y_test,y_pred)
+        print("modelname",modelname,"r2 score",x)
+        results[modelname]=x
+
+        if(x>best_r2):
+            best_r2=x
+            best_model=model
+            best_modelname=modelname
+            y_predbest=y_pred
+
+    print("best model is",best_modelname)
+    print("r2 score is",best_r2)
+    print("mae score is",mean_absolute_error(y_test,y_predbest))
+    print("rmse score is",mean_squared_error(y_test,y_predbest)**0.5)
+
+    joblib.dump(best_model,modelpath/"model.pkl")
     joblib.dump(scaler,modelpath/"scaler.pkl")
-
-    y_pred=model.predict(X_test)
-
-    print("MAE in % for log values",mean_absolute_error(y_test,y_pred)*100)
-    print("RMSE % for log values",mean_squared_error(y_test,y_pred)**0.5*100)
-    print("R2 % for log values",r2_score(y_test,y_pred)*100)
-
-    # using dollar scale
-    y_test_dollar=np.expm1(y_test)
-    y_pred_dollar=np.expm1(y_pred)
-    print("MAE in dollar values",mean_absolute_error(y_test_dollar,y_pred_dollar)*100)
-    print("RMSE in dollar values",mean_squared_error(y_test_dollar,y_pred_dollar)**0.5*100)
-    print("R2 in dollar values",r2_score(y_test_dollar,y_pred_dollar)*100)
+    joblib.dump(results,modelpath/"model_scores.pkl")
+    joblib.dump(best_modelname,modelpath/"best_modelname.pkl")
 
 
 if(__name__=="__main__"):
