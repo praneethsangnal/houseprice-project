@@ -1,7 +1,9 @@
 import pandas as pd
 import numpy as np
+import joblib
 from pathlib import Path
 BASE_DIR=Path(__file__).resolve().parent.parent.parent
+modelpath=BASE_DIR/"savedmodels"
 df=pd.read_csv(BASE_DIR/"datasets"/"dataset.csv")
 def preprocess(df):
     #very basic preprocessing
@@ -23,11 +25,18 @@ def preprocess(df):
         include=["object", "string", "category"]
     ).columns
 
-    X[num_cols]=X[num_cols].fillna(X[num_cols].median())
+    median=X[num_cols].median()
+
+    X[num_cols]=X[num_cols].fillna(median)
 
     X[cat_cols]=X[cat_cols].fillna("None")
 
+    joblib.dump(median.to_dict(),modelpath/"medians.pkl")
+    joblib.dump({col: X[col].unique().tolist() for col in cat_cols},modelpath/"categories.pkl")
+
+
     X=pd.get_dummies(X,drop_first=True)
+    joblib.dump(X.columns.tolist(),modelpath/"columns.pkl")
 
     print(X.head())
     print(y.head())
