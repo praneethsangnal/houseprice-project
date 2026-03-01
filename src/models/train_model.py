@@ -46,7 +46,6 @@ def train_model():
         model.fit(X_train,y_train)
         y_pred=model.predict(X_test)
         x=r2_score(y_test,y_pred)
-        print("modelname",modelname,"r2 score",x)
         results[modelname]=x
 
         if(x>best_r2):
@@ -54,7 +53,12 @@ def train_model():
             best_model=model
             best_modelname=modelname
             y_predbest=y_pred
-
+    
+    print("\nModel Comparison")
+    print("------------------")
+    for name, score in results.items():
+        print(f"{name:} {score:.4f}")
+    
     print("best model is",best_modelname)
     print("r2 score is",best_r2)
     print("mae score is",mean_absolute_error(y_test,y_predbest))
