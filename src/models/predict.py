@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 BASE_DIR=Path(__file__).resolve().parent.parent.parent
 modelpath=BASE_DIR/"savedmodels"
-model=joblib.load(modelpath/"linear_model.pkl")
+model=joblib.load(modelpath/"model.pkl")
 scaler=joblib.load(modelpath/"scaler.pkl")
 medians=joblib.load(modelpath/"medians.pkl")
 categories=joblib.load(modelpath/"categories.pkl")
