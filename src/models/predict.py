@@ -2,43 +2,93 @@ import pandas as pd
 import joblib
 import numpy as np
 from pathlib import Path
-BASE_DIR=Path(__file__).resolve().parent.parent.parent
-modelpath=BASE_DIR/"savedmodels"
-model=joblib.load(modelpath/"model.pkl")
-scaler=joblib.load(modelpath/"scaler.pkl")
-medians=joblib.load(modelpath/"medians.pkl")
-categories=joblib.load(modelpath/"categories.pkl")
-columns=joblib.load(modelpath/"columns.pkl")
 
-def predict():
-    input_dict={
+# ----------------------------
+# Load Paths & Artifacts
+# ----------------------------
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+MODEL_DIR = BASE_DIR / "savedmodels"
+
+model = joblib.load(MODEL_DIR / "model.pkl")
+scaler = joblib.load(MODEL_DIR / "scaler.pkl")
+medians = joblib.load(MODEL_DIR / "medians.pkl")
+categories = joblib.load(MODEL_DIR / "categories.pkl")
+columns = joblib.load(MODEL_DIR / "columns.pkl")
+
+
+# ----------------------------
+# Prediction Function
+# ----------------------------
+def predict(input_dict):
+
+    df = pd.DataFrame([input_dict])
+
+    # ---------- Numeric Handling ----------
+    for col, median in medians.items():
+
+        if col not in df.columns:
+            df[col] = median
+
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+        if pd.isna(df[col].iloc[0]):
+            df[col] = median
+
+    # ---------- Categorical Handling ----------
+    for col, allowed in categories.items():
+
+        if col not in df.columns:
+            df[col] = "None"
+
+        elif df[col].iloc[0] not in allowed:
+            df[col] = "None"
+
+    # ---------- Encoding ----------
+    df = pd.get_dummies(df, drop_first=True)
+
+    # ---------- Feature Alignment ----------
+    df = df.reindex(columns=columns, fill_value=0)
+
+    # ---------- Scaling ----------
+    df_scaled = scaler.transform(df)
+
+    # ---------- Prediction ----------
+    pred_log = model.predict(df_scaled)[0]
+    pred_price = np.expm1(pred_log)
+
+    return pred_log, pred_price
+
+
+# ----------------------------
+# Run Example
+# ----------------------------
+if __name__ == "__main__":
+
+    sample_input = {
         "GrLivArea": 2000,
         "Neighborhood": "CollgCr",
         "TotalBsmtSF": 1000,
         "YearBuilt": 2005,
-        "LotArea" : None
+        "LotArea": None
     }
-    df=pd.DataFrame([input_dict])
-    for col,median in medians.items():
-        if col not in df.columns or pd.isna(df[col][0]): #if not entered, even if entered not a valid number
-            df[col]=median
 
-    for col,category in categories.items():
-        if col not in df.columns or df[col][0] not in category:
-            df[col]="None"
+    log_price, actual_price = predict(sample_input)
 
-    df=pd.get_dummies(df,drop_first=True)
+    #ADD THIS HERE
+    model_name = joblib.load(MODEL_DIR / "best_modelname.pkl")
 
-    df=df.reindex(columns=columns,fill_value=0)
+    print("\n" + "=" * 40)
+    print("🏠 HOUSE PRICE PREDICTION")
+    print("=" * 40)
 
-    df=scaler.transform(df)
+    print(f"\n🤖 Model Used: {model_name}")   # 👈 HERE
 
-    y_pred=model.predict(df)
+    print("\n📥 Input:")
+    for k, v in sample_input.items():
+        print(f"{k:15}: {v}")
 
-    print("log value",y_pred[0])
+    print("\n📊 Prediction:")
+    print(f"Log Price       : {log_price:.4f}")
+    print(f"Estimated Price : ${actual_price:,.2f}")
 
-    print("actual value in dollar",np.expm1(y_pred)[0])
-
-if(__name__=="__main__"):
-    predict()
-    
+    print("\n" + "=" * 40)
